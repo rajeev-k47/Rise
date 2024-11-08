@@ -4,11 +4,13 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.google.gms.google.services)
+    alias(libs.plugins.google.firebase.crashlytics)
+    id("kotlin-parcelize")
 }
 
 android {
     namespace = "net.runner.show"
-    compileSdk = 34
+    compileSdk = 35
     buildFeatures{
         viewBinding= true
         buildConfig =true
@@ -17,7 +19,7 @@ android {
     defaultConfig {
         applicationId = "net.runner.show"
         minSdk = 29
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -28,6 +30,7 @@ android {
         val properties =  Properties()
         properties.load(project.rootProject.file("apikeys.properties").inputStream())
         buildConfigField("String","GENERATIVE_API_KEY","\"${properties.getProperty("GENERATIVE_API_KEY","")}\"")
+        buildConfigField("String","ONESIGNAL_APP_ID","\"${properties.getProperty("ONESIGNAL_APP_ID","")}\"")
 
     }
 
@@ -41,6 +44,7 @@ android {
             val properties =  Properties()
             properties.load(project.rootProject.file("apikeys.properties").inputStream())
             buildConfigField("String","GENERATIVE_API_KEY","\"${properties.getProperty("GENERATIVE_API_KEY","")}\"")
+            buildConfigField("String","ONESIGNAL_APP_ID","\"${properties.getProperty("ONESIGNAL_APP_ID","")}\"")
 
         }
     }
@@ -80,7 +84,9 @@ dependencies {
     implementation(libs.androidx.runtime.livedata)
     implementation(libs.google.generativeai)
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.firebase.crashlytics)
     testImplementation(libs.junit)
+    testImplementation(libs.junit.jupiter)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
@@ -89,4 +95,6 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation(libs.androidx.activity.ktx)
 
+    implementation("com.onesignal:OneSignal:[5.0.0, 5.99.99]")
+    implementation(libs.androidx.work.runtime.ktx)
 }
