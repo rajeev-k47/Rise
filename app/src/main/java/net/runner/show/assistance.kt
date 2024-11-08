@@ -1,19 +1,20 @@
 package net.runner.show
 
-import android.util.Log
+import android.os.Parcelable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -33,6 +34,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -42,8 +44,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.ai.client.generativeai.GenerativeModel
 import com.google.ai.client.generativeai.type.content
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.parcelize.Parcelize
+import java.time.LocalDate
 
 
 val generativeModel = GenerativeModel(
@@ -53,7 +56,10 @@ val generativeModel = GenerativeModel(
 
 suspend fun response(query:String,data:String): String {
     val inputContent = content {
-        text("Imagine you are a diet Assistant with the data : ${data} Explain the question -> ${query} Only use the data if you need")
+        text("DineData => $data")
+        text("Query => $query")
+        text("Date => ${LocalDate.now()}")
+        text("Imagine you are a diet Assistant with the data provided answer the query")
     }
 
     val response = generativeModel.generateContent(inputContent)
@@ -75,8 +81,8 @@ fun parseBoldText(input: String): AnnotatedString {
 
     return builder.toAnnotatedString()
 }
-
-data class listMessages(val type:String,val message:String)
+@Parcelize
+data class listMessages(val type:String,val message:String):Parcelable
 
 @Composable
 fun Assistant(data:String){
@@ -102,7 +108,7 @@ fun Assistant(data:String){
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(WindowInsets.ime.asPaddingValues())
+                    .windowInsetsPadding(WindowInsets.ime)
             ) {
                 LazyColumn(
                     modifier = Modifier.weight(1f),
@@ -122,10 +128,10 @@ fun Assistant(data:String){
                         ){
                             if (currentMessage.type == "0") {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.ai), // You can choose another icon
+                                    painter = painterResource(id = R.drawable.ai),
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.onBackground,
-                                    modifier = Modifier.padding(end = 5.dp , top = 5.dp).size(30.dp) // Space between icon and text
+                                    modifier = Modifier.padding(end = 5.dp , top = 5.dp).size(30.dp)
                                 )
                             }
                             Text(
@@ -164,6 +170,7 @@ fun Assistant(data:String){
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(8.dp)
+                        .navigationBarsPadding()
                         .background(
                             MaterialTheme.colorScheme.secondaryContainer,
                             shape = RoundedCornerShape(24.dp)
@@ -184,25 +191,27 @@ fun Assistant(data:String){
                             innerTextField()
                         }
                     )
+                        val keyboardController = LocalSoftwareKeyboardController.current
+                        IconButton(onClick = {
 
-                    IconButton(onClick = {
-                        if (message.isNotBlank()) {
-                            listMessages = listMessages.toMutableList().apply {
-                                add(listMessages("1", message))
-                                add(listMessages("0", "Thinking..."))
-                            }
-                            val indexOfThinkingMessage = listMessages.size - 1
-                            message = ""
-                            coroutineScope.launch {
-                                val responseMessage = response(listMessages[listMessages.size-2].message,data)
+                            if (message.isNotBlank()) {
+                                keyboardController?.hide()
                                 listMessages = listMessages.toMutableList().apply {
-                                    set(indexOfThinkingMessage, listMessages("0", responseMessage))
+                                    add(listMessages("1", message))
+                                    add(listMessages("0", "Thinking..."))
+                                }
+                                val indexOfThinkingMessage = listMessages.size - 1
+                                message = ""
+                                coroutineScope.launch {
+                                    val responseMessage = response(listMessages[listMessages.size-2].message,data)
+                                    listMessages = listMessages.toMutableList().apply {
+                                        set(indexOfThinkingMessage, listMessages("0", responseMessage))
+                                    }
                                 }
                             }
+                        }) {
+                            Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send", tint = MaterialTheme.colorScheme.primary)
                         }
-                    }) {
-                        Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send", tint = MaterialTheme.colorScheme.primary)
-                    }
                 }
             }
 
