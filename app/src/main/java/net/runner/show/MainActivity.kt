@@ -1,5 +1,6 @@
 package net.runner.show
 
+import android.content.pm.PackageInfo
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -32,6 +33,7 @@ import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -59,48 +61,35 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleCoroutineScope
 import androidx.navigation.NavController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.onesignal.OneSignal
+import com.onesignal.debug.LogLevel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 
-
-class DataLoaderViewModel : ViewModel() {
-    private val _dataLoaded = MutableLiveData(false)
-    val dataLoaded: LiveData<Boolean> get() = _dataLoaded
-
-    private val _fetchedData = MutableLiveData<String>()
-    val fetchedData: LiveData<String> get() = _fetchedData
-
-    init {
-        viewModelScope.launch {
-            loadDataFromDatabase()
-        }
-    }
-
-    private suspend fun loadDataFromDatabase() {
-        val db = FirebaseFirestore.getInstance()
-        db.collection("dine").document("dine")
-            .get()
-            .addOnSuccessListener { result ->
-                _fetchedData.postValue(result.data?.get("value").toString())
-                _dataLoaded.postValue(true)
-            }
-            .addOnFailureListener { exception ->
-                Log.w("TAG", "Error getting documents.", exception)
-                _fetchedData.postValue("")
-            }
-    }
-}
+val ONESIGNAL_APP_ID = BuildConfig.ONESIGNAL_APP_ID
 class MainActivity : ComponentActivity() {
     private val dataviewModel: DataLoaderViewModel by viewModels()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContent {
 
+        OneSignal.Debug.logLevel = LogLevel.VERBOSE
+        OneSignal.initWithContext(this, ONESIGNAL_APP_ID)
+        CoroutineScope(Dispatchers.IO).launch {
+            OneSignal.Notifications.requestPermission(false)
+        }
+        val packageInfo: PackageInfo = this.packageManager.getPackageInfo(this.packageName, 0)
+        val vid = packageInfo.versionName.toString()
+
+        setContent {
 
             ShowTheme {
                 var data = rememberSaveable {
@@ -112,7 +101,7 @@ class MainActivity : ComponentActivity() {
                     startDestination = "Main"
                 ) {
                     composable(route = "Main") {
-                        navDine(dataviewModel = dataviewModel,navController){fdata->
+                        navDine(dataviewModel = dataviewModel,navController,vid){fdata->
                             data.value=fdata
                         }
                     }
@@ -128,10 +117,19 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun navDine(dataviewModel:DataLoaderViewModel,navController: NavController,setdata:(String)->Unit){
+fun navDine(dataviewModel:DataLoaderViewModel,navController: NavController,vid:String,setdata:(String)->Unit){
     val context = LocalContext.current
     val dataLoaded by dataviewModel.dataLoaded.observeAsState(initial = false)
     val fetchedData by dataviewModel.fetchedData.observeAsState("")
+    val updateState by dataviewModel.state.observeAsState(vid)
+
+    if(updateState==vid){
+        OneSignal.User.removeTag("update")
+    }else{
+        Log.d("saregama",updateState)
+        OneSignal.InAppMessages.addTriggers(mapOf("update" to "true"))
+        OneSignal.User.addTag("update","true")
+    }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -205,7 +203,9 @@ fun dine(dineData:String,navController: NavController) {
             DineData.value,
             modifier = Modifier
                 .weight(0.85f)
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .padding(top = 10.dp)
+            ,
             DineDay.value
         )
     }
@@ -235,6 +235,7 @@ fun DineUi(data:String,modifier: Modifier,CURRENTDAY:Int){
         Dinemeal.add(Meal(day,Lunch,Dinner,BreakFast))
     }
 
+    ScheduleTimedNotifications(Dinemeal)
 
     Column (
         modifier = modifier,
