@@ -27,6 +27,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
@@ -85,15 +86,14 @@ fun parseBoldText(input: String): AnnotatedString {
 data class listMessages(val type:String,val message:String):Parcelable
 
 @Composable
-fun Assistant(data:String){
+fun Assistant(data:String,cstm:String){
 
     val coroutineScope = rememberCoroutineScope()
-
 
     var listMessages by rememberSaveable {
         mutableStateOf(
             mutableListOf(
-                listMessages("0", "Well! How can I help you Today with your Meal ?")
+              if (cstm.isEmpty())  listMessages("0", "Well! How can I help you Today with your Meal ?") else listMessages("0","Thinking..."),
             )
         )
     }
@@ -104,6 +104,15 @@ fun Assistant(data:String){
         .padding(top = 30.dp)){
             var message by rememberSaveable { mutableStateOf("") }
             val scrollState = rememberLazyListState()
+
+        if(cstm.isNotEmpty()){
+            LaunchedEffect(key1 = "2") {
+                val responseMessage = response("Give some unique and healthy facts about this meal",cstm)
+                listMessages = listMessages.toMutableList().apply {
+                    set(listMessages.size-1, listMessages("0", responseMessage))
+                }
+            }
+        }
 
             Column(
                 modifier = Modifier
@@ -131,7 +140,9 @@ fun Assistant(data:String){
                                     painter = painterResource(id = R.drawable.ai),
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.onBackground,
-                                    modifier = Modifier.padding(end = 5.dp , top = 5.dp).size(30.dp)
+                                    modifier = Modifier
+                                        .padding(end = 5.dp, top = 5.dp)
+                                        .size(35.dp)
                                 )
                             }
                             Text(
@@ -146,7 +157,7 @@ fun Assistant(data:String){
                                         shape = RoundedCornerShape(15.dp)
                                     )
                                     .padding(12.dp)
-                                    .widthIn(min = 50.dp, max = 250.dp),
+                                    .widthIn(min = 50.dp, max = 300.dp),
                                 color = if (currentMessage.type == "0")
                                     MaterialTheme.colorScheme.onPrimary
                                 else
@@ -158,7 +169,9 @@ fun Assistant(data:String){
                                     imageVector = Icons.Default.Person,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                                    modifier = Modifier.padding(start = 5.dp,top=5.dp).size(30.dp)
+                                    modifier = Modifier
+                                        .padding(start = 5.dp, top = 5.dp)
+                                        .size(30.dp)
                                 )
                             }
 
