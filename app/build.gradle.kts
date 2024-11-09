@@ -97,4 +97,6 @@ dependencies {
 
     implementation("com.onesignal:OneSignal:[5.0.0, 5.99.99]")
     implementation(libs.androidx.work.runtime.ktx)
+        implementation(libs.coil.compose)
+    implementation(libs.coil.gif)
 }
