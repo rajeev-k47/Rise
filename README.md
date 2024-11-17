@@ -8,7 +8,10 @@ It is a Menu app build with **JetPack Compose and Koltin** with integration of *
 
 **Upload menu** : Upload the image of menu , gemini will extract text from  it and make a clean data with day sync functionality.
 
-**Personal Assistant** : Ask your all questions about the diet to your personal diet assistant.
+**Personal Assistant** : Ask your all questions about the diet to your personal diet assistant.Also Long press on a meal to get facts and benefits of that meal directly.
+
+**Personalised Menu Notifications** : Notifications scheduled for each meal per day to remind. 
+
 
 ## Getting Started
 
