@@ -1,5 +1,6 @@
 package net.runner.show
 
+import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -22,6 +23,7 @@ import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,8 +50,9 @@ import java.util.Calendar
 import java.util.Locale
 
 @Composable
-fun rail(data: String, modifier: Modifier, updateSelected: (Int) -> Unit) {
+fun rail(data: String, modifier: Modifier,dineDayViewModel: DineDayViewModel, updateSelected: (Int) -> Unit) {
     var selectedItem by rememberSaveable { mutableIntStateOf(-1) }
+    selectedItem = dineDayViewModel.dineDay.observeAsState(0).value
     val todayDay = Calendar.getInstance().get(Calendar.DAY_OF_MONTH)
 
     val datajson = JSONArray(data)
