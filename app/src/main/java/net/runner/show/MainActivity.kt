@@ -56,15 +56,17 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import net.runner.show.ui.theme.ShowTheme
 import org.json.JSONArray
+import java.util.Calendar
 
 val ONESIGNAL_APP_ID = BuildConfig.ONESIGNAL_APP_ID
 
 class MainActivity : ComponentActivity() {
     private val dataviewModel: DataLoaderViewModel by viewModels()
+    private val dineDayModel: DineDayViewModel by viewModels()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
+//        scheduleDailyNotifications(this)
         OneSignal.Debug.logLevel = LogLevel.VERBOSE
         OneSignal.initWithContext(this, ONESIGNAL_APP_ID)
         CoroutineScope(Dispatchers.IO).launch {
@@ -85,7 +87,7 @@ class MainActivity : ComponentActivity() {
                     startDestination = "Main"
                 ) {
                     composable(route = "Main") {
-                        navDine(dataviewModel = dataviewModel, navController, vid) { fdata ->
+                        navDine(dataviewModel = dataviewModel, navController, vid,dineDayModel) { fdata ->
                             Dinedata.value = fdata
                         }
                     }
@@ -110,6 +112,12 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onResume() {
+        super.onResume()
+        dineDayModel.resetToToday()
+
+    }
 }
 
 @Composable
@@ -117,6 +125,7 @@ fun navDine(
     dataviewModel: DataLoaderViewModel,
     navController: NavController,
     vid: String,
+    dineDayViewModel: DineDayViewModel,
     setdata: (String) -> Unit
 ) {
     val context = LocalContext.current
@@ -141,7 +150,7 @@ fun navDine(
 
         if (dataLoaded) {
             if (fetchedData.isNotEmpty()) {
-                dine(dineData = fetchedData, navController)
+                dine(dineData = fetchedData, navController,dineDayViewModel)
                 setdata(fetchedData)
             }
         } else {
@@ -154,9 +163,11 @@ fun navDine(
 
 
 @Composable
-fun dine(dineData: String, navController: NavController) {
+fun dine(dineData: String, navController: NavController,dineDayViewModel: DineDayViewModel) {
     var DineData = rememberSaveable {mutableStateOf(dineData) }
-    var DineDay = rememberSaveable { mutableStateOf(0) }
+    var DineDay by remember { mutableStateOf(0) }
+
+    DineDay = dineDayViewModel.dineDay.observeAsState(0).value
     if (DineData.value.isEmpty())  return
 
     Row(
@@ -169,7 +180,7 @@ fun dine(dineData: String, navController: NavController) {
                 .weight(0.85f)
                 .fillMaxWidth()
                 .padding(top = 10.dp, start = 10.dp),
-            DineDay.value,
+            DineDay,
             navController
         )
 
@@ -211,9 +222,10 @@ fun dine(dineData: String, navController: NavController) {
             rail(
                 DineData.value,
                 modifier = Modifier
-                    .weight(0.15f)
+                    .weight(0.15f),
+                dineDayViewModel
             ) { day ->
-                DineDay.value = day
+                dineDayViewModel.updateDineDay(day)
             }
 
 
@@ -270,7 +282,7 @@ fun DineUi(data: String, modifier: Modifier, CURRENTDAY: Int,navController: NavC
         Dinemeal.add(Meal(day, Lunch, Dinner, BreakFast))
     }
 
-    ScheduleTimedNotifications(Dinemeal)
+//    ScheduleTimedNotifications(Dinemeal)
 
     Column(
         modifier = modifier,
