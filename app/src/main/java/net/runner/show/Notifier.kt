@@ -44,7 +44,7 @@ object NotificationHelper {
     fun createNotificationChannel(context:Context) {
         val name ="Dine Notification Channel"
         val descriptionText ="Channel for dine notifications"
-        val importance = NotificationManager.IMPORTANCE_DEFAULT
+        val importance = NotificationManager.IMPORTANCE_HIGH
         val channel = NotificationChannel(CHANNEL_ID,name,importance).apply {
             description = descriptionText
         }
@@ -58,7 +58,7 @@ object NotificationHelper {
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(title)
             .setContentText(message)
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setPriority(NotificationCompat.PRIORITY_MAX)
             .setAutoCancel(true)
             .setContentIntent(
                 PendingIntent.getActivity(
